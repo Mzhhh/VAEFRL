@@ -1,0 +1,4 @@
+.vscode/*
+tensorboard/*
+model_checkpoints/*
+__pycache__/*
