@@ -31,10 +31,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
-parser.add_argument("--max_timesteps", default=1e6)    # Max time steps to run environment
-parser.add_argument("--buffer_size", default=1e6)    # Max time steps to run environment
+parser.add_argument("--max_timesteps", default=1e6, type=float)    # Max time steps to run environment
+parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
-parser.add_argument("--batch_size", default=128)       # Batch size for both actor and critic
+parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 args = parser.parse_args()
 
 REPLAY_BUFFER_SIZE = int(args.buffer_size)
