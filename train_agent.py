@@ -44,6 +44,7 @@ parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussi
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
 
 
@@ -62,6 +63,17 @@ eval_freq = -1
 start_timesteps = args.start_timesteps
 
 ### --- Hyperparameters END   --- ###
+
+
+# setup virtual display
+
+if args.virtual_display:
+
+    from pyvirtualdisplay import Display
+    from IPython.display import clear_output
+    display = Display(visible=0, size=(400, 300))
+    display.start()
+
 
 env_name = "CarRacing-v0"
 env = gym.make(env_name)

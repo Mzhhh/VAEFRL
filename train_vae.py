@@ -42,6 +42,7 @@ parser.add_argument("--learning_rate", default=1e-4)                      # Targ
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
 parser.add_argument("--kl_weight", default=0.1)
 parser.add_argument("--consistency_weight", default=1)
+parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
 
 CRITIC_MODEL_FILE = args.load_model
@@ -62,6 +63,17 @@ eval_freq = -1  # expert model
 start_timesteps = 0  # expert model
 
 ### --- Hyperparameters END   --- ###
+
+
+# setup virtual display
+
+if args.virtual_display:
+
+    from pyvirtualdisplay import Display
+    from IPython.display import clear_output
+    display = Display(visible=0, size=(400, 300))
+    display.start()
+
 
 env_name = "CarRacing-v0"
 env = gym.make(env_name)
