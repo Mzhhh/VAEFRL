@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
 parser.add_argument("--start_timesteps", default=25e3, type=float) # Time steps initial random policy is used
 parser.add_argument("--max_timesteps", default=1e6, type=float)    # Max time steps to run environment
+parser.add_argument("--max_episode_steps", default=1e2, type=float)
 parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
@@ -52,7 +53,7 @@ REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
 max_timesteps = int(args.max_timesteps)
 expl_noise = args.expl_noise
-max_episode_steps = int(args.max_timesteps)
+max_episode_steps = int(args.max_episode_steps)
 batch_size = int(args.batch_size)
 
 lr = args.learning_rate
