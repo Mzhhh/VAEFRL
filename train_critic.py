@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import numpy as np
 from tqdm import tqdm
@@ -28,12 +29,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ### --- Hyperparameters START --- ###
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
+parser.add_argument("--max_timesteps", default=1e6, type=int)    # Max time steps to run environment
+parser.add_argument("--buffer_size", default=1e6, type=int)    # Max time steps to run environment
+parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
+parser.add_argument("--batch_size", default=128, type=int)       # Batch size for both actor and critic
+args = parser.parse_args()
+
 REPLAY_BUFFER_SIZE = int(1e4)
 
-max_timesteps = int(3e4)
-expl_noise = 0.01
-max_episode_steps = 100
-batch_size = 128
+max_timesteps = int(args.max_timesteps)
+expl_noise = args.expl_noise
+max_episode_steps = args.max_timesteps
+batch_size = args.batch_size
 
 eval_freq = -1  # expert model
 start_timesteps = 0  # expert model
@@ -118,8 +127,6 @@ for t in tqdm(range(max_timesteps)):
         policy_raw.critic_optimizer.step()
 
         policy_raw.update_weights()
-
-        policy_raw.train(buffer_raw)
 
         log_writer.add_scalar("policy_raw/critic_loss", critic_loss_raw.data, t+1)
 

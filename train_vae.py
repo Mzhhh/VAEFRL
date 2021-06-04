@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import numpy as np
 from tqdm import tqdm
@@ -30,19 +31,31 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ### --- Hyperparameters START --- ###
 
-CRITIC_MODEL_FILE = ""
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
+parser.add_argument("--max_timesteps", default=1e6, type=int)    # Max time steps to run environment
+parser.add_argument("--buffer_size", default=1e6, type=int)    # Max time steps to run environment
+parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
+parser.add_argument("--batch_size", default=128, type=int)       # Batch size for both actor and critic
+parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
+parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--kl_weight", default=0.1)
+parser.add_argument("--consistency_weight", default=1)
+args = parser.parse_args()
 
-REPLAY_BUFFER_SIZE = int(1e4)
+CRITIC_MODEL_FILE = args.load_model
 
-max_timesteps = int(3e4)
-expl_noise = 0.01
-max_episode_steps = 100
-batch_size = 128
+REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
-kl_weight = 0.1
-consistency_weight = 1
+max_timesteps = int(args.max_timesteps)
+expl_noise = args.expl_noise
+max_episode_steps = args.max_timesteps
+batch_size = args.batch_size
 
-lr = 1e-4
+kl_weight = args.kl_weight
+consistency_weight = args.consistency_weight
+
+lr = args.learning_rate
 
 eval_freq = -1  # expert model
 start_timesteps = 0  # expert model
