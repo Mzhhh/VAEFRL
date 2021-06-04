@@ -81,7 +81,7 @@ max_action = env.action_space.high
 policy_repr = DDPG.DDPG(32, action_dim, min_action, max_action)
 buffer_repr = ReplayBuffer([32], action_dim, REPLAY_BUFFER_SIZE, device=device)
 
-vae = CNNVAE(image_channels=3, h_dim=4096, z_dim=32)
+vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
 vae.load(VAE_MODEL_FILE)
 
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")

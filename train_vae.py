@@ -84,7 +84,7 @@ policy_raw = DDPG_CNN.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
 
-vae = CNNVAE(image_channels=3, h_dim=4096, z_dim=32)
+vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
 vae_optimizer = optim.Adam(vae.parameters(), lr=lr)
 
 vae_loss = lambda original, reconstructed, mu, logvar, t: \
