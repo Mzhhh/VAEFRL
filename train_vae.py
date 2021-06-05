@@ -92,7 +92,8 @@ max_action = env.action_space.high
 # model components
 
 buffer_raw = ReplayBuffer((3, 96, 96), action_dim, REPLAY_BUFFER_SIZE, device=device)
-policy_raw = DDPG_CNN.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE))
+policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
+policy_raw.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE))
 
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
