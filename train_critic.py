@@ -36,6 +36,7 @@ parser.add_argument("--max_episode_steps", default=1e2, type=float)
 parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
+parser.add_argument("--discount", default=0.99, type=float)  
 parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
 
@@ -45,6 +46,7 @@ max_timesteps = int(args.max_timesteps)
 expl_noise = args.expl_noise
 max_episode_steps = int(args.max_episode_steps)
 batch_size = args.batch_size
+discount = args.discount
 
 eval_freq = -1  # expert model
 start_timesteps = 0  # expert model
