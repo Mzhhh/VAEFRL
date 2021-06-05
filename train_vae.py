@@ -113,8 +113,9 @@ log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", ti
 state, done = env.reset(), False
 
 state_tf = process_state_image(state)  # for tf model
-
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
+
+state = state / 255.0
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -131,6 +132,8 @@ for t in tqdm(range(max_timesteps)):
 
     next_state_tf = process_state_image(next_state)  # for tf
     state_frame_stack_queue.append(next_state_tf)
+
+    next_state = next_state / 255.0
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -188,6 +191,8 @@ for t in tqdm(range(max_timesteps)):
 
         state_tf = process_state_image(state)  # for tf model
         state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
+
+        state = state / 255.0
 
         episode_reward = 0
         episode_timesteps = 0
