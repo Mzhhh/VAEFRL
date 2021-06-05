@@ -2,7 +2,7 @@
 
 sudo apt-get install xvfb
 
-pip install box2d box2d-py
+pip install gym box2d box2d-py
 pip install --upgrade h5py==2.10.0
 pip install pyvirtualdisplay
 pip install Pillow

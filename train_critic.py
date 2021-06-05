@@ -134,13 +134,12 @@ for t in tqdm(range(max_timesteps)):
 
         policy_raw.clear_gradient()
 
-        critic_loss_raw = policy_raw.critic_loss(batch)
+        critic_loss_raw = policy_raw.critic_loss(batch, log_writer, t)
         critic_loss_raw.backward()
         policy_raw.critic_optimizer.step()
 
         policy_raw.update_weights()
 
-        log_writer.add_scalar("policy_raw/critic_loss", critic_loss_raw.data, t+1)
 
         ### TRAINING ROUTINE END   ###
 
@@ -148,7 +147,7 @@ for t in tqdm(range(max_timesteps)):
 
         # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
         print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
-        log_writer.add_scalar("agent/reward", episode_reward, t+1)
+        log_writer.add_scalar("agent/return", episode_reward, t+1)
         
         # Reset environment
         # clear_output(wait=True)
