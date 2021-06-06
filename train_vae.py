@@ -40,7 +40,7 @@ parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussi
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
-parser.add_argument("--kl_weight", default=0.1)
+parser.add_argument("--kl_weight", default=0.1, type=float)
 parser.add_argument("--consistency_weight", default=1)
 parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
