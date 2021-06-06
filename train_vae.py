@@ -167,7 +167,7 @@ for t in tqdm(range(max_timesteps)):
 
         Q_input = policy_raw.Q_value(batch).detach()
         Q_recon = policy_raw.Q_value((reconstruction, batch[1], None, None, None))  # only feed in reconstructed state & action
-        Q_consistency_loss_1 = nn.MSELoss(reduction="sum")(Q_input, Q_recon)  # between original & reconstructed
+        Q_consistency_loss_1 = nn.MSELoss(reduction="mean")(Q_input, Q_recon)  # between original & reconstructed
 
         vae_loss_total = vae_loss_naked + consistency_weight * Q_consistency_loss_1
 
