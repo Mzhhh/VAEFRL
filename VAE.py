@@ -168,7 +168,8 @@ if __name__ == "__main__":
 	vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
 	vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
 
-	latent_np, vae_recon_np = generate_results(vae, state_array)
+	latent_np, vae_recon_np = generate_results(vae, state_array/255.0)
+	vae_recon_np = (vae_recon_np.swapaxes(1, 3) * 255).astype(np.uint8).copy()
 
 	if os.path.exists("./tmp"):
 		shutil.rmtree("./tmp")
@@ -191,7 +192,7 @@ if __name__ == "__main__":
 	for i, index in enumerate(show_index, start=1):
 		orig = state_array[int(index)].swapaxes(0, 2)
 		recon = vae_recon_np[int(index)]
-		_, (ax1, ax2) = plt.subplots(figsize=(8, 4))
+		_, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 		ax1.imshow(orig)
 		ax2.imshow(recon)
 		plt.savefig(f"./tmp/reconstruction/pair{i}.png", dpi=200, bbox_inches="tight")
