@@ -175,7 +175,7 @@ for t in tqdm(range(max_timesteps)):
 
 		cr_loss, ac_loss = policy_repr.train(buffer_repr)
 		log_writer.add_scalar("critic/loss", cr_loss, t+1)
-		log_writer.add_scalar("agent/loss", ac_loss, t+1)
+		log_writer.add_scalar("actor/loss", ac_loss, t+1)
 
 		### TRAINING ROUTINE END   ###
 
@@ -183,7 +183,7 @@ for t in tqdm(range(max_timesteps)):
 
 		# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
 		print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
-		log_writer.add_scalar("policy/episode_reward", episode_reward, t+1)
+		log_writer.add_scalar("agent/episode_reward", episode_reward, t+1)
 		# Reset environment
 		state, done = env.reset(), False
 		state = state / 255.0
@@ -202,7 +202,7 @@ for t in tqdm(range(max_timesteps)):
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
 			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed)
-			log_writer.add_scalar("policy/eval_reward", avg_reward, t+1)
+			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
 
 
 

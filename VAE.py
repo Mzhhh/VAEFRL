@@ -1,3 +1,7 @@
+import os
+import argparse
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -103,3 +107,89 @@ def VAELoss(original, reconstructed, mu, logvar, KL_weight=1, writer_info=None):
         writer.add_scalar("vae/kl_loss", KL_loss, t+1)
 
     return recon_loss + KL_loss * KL_weight
+
+
+def generate_results(model, input):
+
+    model.eval()
+    vae_input = torch.from_numpy(input.copy()).to(device).float().swapaxes(1, 3)
+    latent = model.encode(vae_input).detach()
+    vae_recon, _, _ = model.vae(vae_input).detach()
+
+    latent_np = latent.cpu().numpy()
+    vae_recon_np = vae_recon.cpu().numpy()
+
+    return latent_np, vae_recon_np
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_sample", default=1e3, type=float)
+    parser.add_argument("--show_image", default=-1, type=float)
+    parser.add_argument("--max_episode_steps", default=1e2, type=float) 
+    parser.add_argument("--load_model", default="", type=str)    
+    args = parser.parse_args()
+
+    num_sample = int(args.num_sample)
+    show_image = int(args.show_image) if args.show_image > 0 else num_sample
+    assert show_image <= num_sample, f"Cannot show more than {num_sample} samples"
+
+    max_episode_steps = int(args.max_episode_steps)
+    VAE_MODEL_FILE = args.load_model
+    Z_DIM = 32
+
+    # generate input
+    state_array = np.zeros((num_sample, 96, 96, 3))
+    collected = 0
+
+    import gym
+    env_name = "CarRacing-v0"
+    env = gym.make(env_name)
+
+    need_reset = True
+    episode_step = 0
+    while collected < num_sample:
+        if need_reset:
+            state, done = env.reset(), False
+            episode_step = 0
+        else:
+            state, done = env.step(env.observation_space.sample())
+            episode_step += 1
+        state_array[collected, :] = state.copy()
+        need_reset = done or (episode_step >= max_episode_steps)
+    
+    vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
+    vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
+
+    latent_np, vae_recon_np = generate_results(vae, state_array)
+
+    if os.path.exists("./tmp"):
+        os.remove("./tmp")
+    os.mkdir("./tmp")
+    
+    # plot latent distributions
+    os.mkdir("./tmp/latent")
+    from matplotlib import pyplot as plt
+    import seaborn as sns
+
+    for z in range(Z_DIM):
+        _, ax = plt.subplots(figsize=(6, 6))
+        sns.distplot(latent_np[:, z].flatten(), ax=ax)
+        plt.savefig(f"./tmp/latent/dim{z+1}.png", dpi=200, bbox_inches="adjust")
+        plt.close()
+
+    # plot latent distributions
+    os.mkdir("./tmp/reconstruction")
+    show_index = np.random.choice(num_sample, show_image, replace=False)
+    for i, index in enumerate(show_index, start=1):
+        orig = state_array[int(index)].swapaxes(0, 2)
+        recon = vae_recon_np[int(index)]
+        _, (ax1, ax2) = plt.subplots(figsize=(8, 4))
+        ax1.imshow(orig)
+        ax2.imshow(recon)
+        plt.savefig(f"./tmp/reconstruction/pair{i}.png")
+        plt.close()
+
+
+        
