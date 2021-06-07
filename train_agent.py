@@ -44,6 +44,7 @@ parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussi
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--eval_freq", default=50, type=float)
 parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
 
@@ -56,6 +57,7 @@ max_timesteps = int(args.max_timesteps)
 expl_noise = args.expl_noise
 max_episode_steps = int(args.max_episode_steps)
 batch_size = int(args.batch_size)
+eval_freq = int(args.eval_freq)
 
 lr = args.learning_rate
 
@@ -69,10 +71,10 @@ start_timesteps = args.start_timesteps
 
 if args.virtual_display:
 
-    from pyvirtualdisplay import Display
-    from IPython.display import clear_output
-    display = Display(visible=0, size=(400, 300))
-    display.start()
+	from pyvirtualdisplay import Display
+	from IPython.display import clear_output
+	display = Display(visible=0, size=(400, 300))
+	display.start()
 
 
 env_name = "CarRacing-v0"
@@ -99,71 +101,108 @@ vae.load(VAE_MODEL_FILE)
 
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
 
+
+# Runs policy for X episodes and returns average reward
+# A fixed seed is used for the eval environments
+def eval_policy(vae, policy, env_name, seed, eval_episodes=10):
+	eval_env = gym.make(env_name)
+	eval_env.seed(seed + 100)
+
+	avg_reward = 0.
+	for _ in range(eval_episodes):
+		state, done = eval_env.reset(), False
+		state = state / 255.0  # normalize
+		state_repr = get_encoded_raw(vae, state).cpu().numpy()
+		
+		while not done:
+			action = policy.select_action(state_repr)
+			state, reward, done, _ = eval_env.step(action)
+			state = state / 255.0
+			state_repr = get_encoded_raw(vae, state).cpu().numpy()
+
+			avg_reward += reward
+
+	avg_reward /= eval_episodes
+
+	return avg_reward
+
+
 ### --- TRAINING START --- ### 
 
 
 # step 3: fix VAE, train agent
 
 state, done = env.reset(), False
+state = state / 255.0
+
 state_repr = get_encoded_raw(vae, state).cpu().numpy()
 
 
 for t in tqdm(range(max_timesteps)):
 		
-    episode_timesteps += 1
+	episode_timesteps += 1
 
-    # Select action according to expert model
-    
-    action = policy_repr.select_action(state_repr)
+	# Select action according to expert model
+	
+	action = policy_repr.select_action(state_repr)
 
-    action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
+	action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
 
-    # Perform action
-    next_state, reward, done, _ = env.step(action)
-    next_state_repr = get_encoded_raw(vae, next_state).cpu().numpy()
+	# Perform action
+	next_state, reward, done, _ = env.step(action)
+	next_state = next_state / 255.0
 
-    done_bool = float(done or (episode_timesteps > max_episode_steps))
+	next_state_repr = get_encoded_raw(vae, next_state).cpu().numpy()
 
-    # Store data in replay buffer
+	done_bool = float(done or (episode_timesteps > max_episode_steps))
 
-    state_repr = state_repr.copy()
-    next_state_repr = next_state_repr.copy()
+	# Store data in replay buffer
 
-    buffer_repr.add_vector(state_repr, action, next_state_repr, reward, done_bool)
+	state_repr = state_repr.copy()
+	next_state_repr = next_state_repr.copy()
 
-    state_repr = next_state_repr
+	buffer_repr.add_vector(state_repr, action, next_state_repr, reward, done_bool)
 
-    episode_reward += reward
+	state_repr = next_state_repr
 
-    # Train agent after collecting sufficient data
-    if t >= start_timesteps:
-        
-        ### TRAINING ROUTINE START ###
+	episode_reward += reward
 
-        cr_loss, ac_loss = policy_repr.train(buffer_repr)
-        log_writer.add_scalar("critic/loss", cr_loss, t+1)
-        log_writer.add_scalar("agent/loss", ac_loss, t+1)
+	# Train agent after collecting sufficient data
+	if t >= start_timesteps:
+		
+		### TRAINING ROUTINE START ###
 
-        ### TRAINING ROUTINE END   ###
+		cr_loss, ac_loss = policy_repr.train(buffer_repr)
+		log_writer.add_scalar("critic/loss", cr_loss, t+1)
+		log_writer.add_scalar("agent/loss", ac_loss, t+1)
 
-    if done_bool: 
+		### TRAINING ROUTINE END   ###
 
-        # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
-        print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
-        log_writer.add_scalar("agent/reward", episode_reward, t+1)
-        # Reset environment
-        state, done = env.reset(), False
-        state_repr = get_encoded_raw(vae, state).cpu().numpy()
-        
-        episode_reward = 0
-        episode_timesteps = 0
-        episode_num += 1 
+	if done_bool: 
 
-        if episode_num % 50 == 0:
-            if not os.path.exists("./model_checkpoints"):
-                os.makedirs("./model_checkpoints")
-            time_str = time.strftime("%m%d%H%M", time.localtime())
-            vae.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str))
+		# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
+		print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
+		log_writer.add_scalar("policy/episode_reward", episode_reward, t+1)
+		# Reset environment
+		state, done = env.reset(), False
+		state = state / 255.0
+
+		state_repr = get_encoded_raw(vae, state).cpu().numpy()
+		
+		episode_reward = 0
+		episode_timesteps = 0
+		episode_num += 1 
+
+		if episode_num % 50 == 0:
+			if not os.path.exists("./model_checkpoints"):
+				os.makedirs("./model_checkpoints")
+			time_str = time.strftime("%m%d%H%M", time.localtime())
+			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str))
+
+		if episode_num % eval_freq == 0:
+			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed)
+			log_writer.add_scaler("policy/eval_reward", avg_reward, t+1)
+
 
 
 ### --- TRAINING END --- ###
