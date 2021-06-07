@@ -61,7 +61,6 @@ eval_freq = int(args.eval_freq)
 
 lr = args.learning_rate
 
-eval_freq = -1
 start_timesteps = args.start_timesteps
 
 ### --- Hyperparameters END   --- ###
@@ -143,11 +142,12 @@ for t in tqdm(range(max_timesteps)):
 		
 	episode_timesteps += 1
 
-	# Select action according to expert model
-	
-	action = policy_repr.select_action(state_repr)
-
-	action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
+	# Select an action
+	if t < start_timesteps:
+		action = env.action_space.sample()
+	else:
+		action = policy_repr.select_action(state_repr)
+		action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
 
 	# Perform action
 	next_state, reward, done, _ = env.step(action)
@@ -200,9 +200,9 @@ for t in tqdm(range(max_timesteps)):
 			time_str = time.strftime("%m%d%H%M", time.localtime())
 			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str))
 
-		if episode_num % eval_freq == 0:
+		if t > start_timesteps and episode_num % eval_freq == 0:
 			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed)
-			log_writer.add_scaler("policy/eval_reward", avg_reward, t+1)
+			log_writer.add_scalar("policy/eval_reward", avg_reward, t+1)
 
 
 
