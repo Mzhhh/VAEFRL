@@ -24,13 +24,13 @@ class UnFlatten(nn.Module):
 		return input.view(input.size(0), self.num_channel, self.a, self.a)
 
 class CNNVAE(nn.Module):
-	def __init__(self, image_channels=3, h_dim=256, z_dim=32, unflatten_channel=256, unflatten_size=1):
+	def __init__(self, image_channels=3, h_dim=1024, z_dim=32, unflatten_channel=1024, unflatten_size=1):
 		super(CNNVAE, self).__init__()
 		self.encoder = nn.Sequential(
-			nn.Conv2d(image_channels, 32, kernel_size=4, stride=3),
+			nn.Conv2d(image_channels, 32, kernel_size=4, stride=2),
 			nn.BatchNorm2d(32),
 			nn.ReLU(),
-			nn.Conv2d(32, 64, kernel_size=4, stride=3),  
+			nn.Conv2d(32, 64, kernel_size=4, stride=2),  
 			nn.BatchNorm2d(64),
 			nn.ReLU(),
 			nn.Conv2d(64, 128, kernel_size=4, stride=2),  
@@ -48,16 +48,16 @@ class CNNVAE(nn.Module):
 		
 		self.decoder = nn.Sequential(
 			UnFlatten(unflatten_channel, unflatten_size),
-			nn.ConvTranspose2d(unflatten_channel, 128, kernel_size=4, stride=2),  
+			nn.ConvTranspose2d(unflatten_channel, 128, kernel_size=5, stride=2),  
 			nn.BatchNorm2d(128),
 			nn.ReLU(),
-			nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2),
+			nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2),
 			nn.BatchNorm2d(64),
 			nn.ReLU(),
-			nn.ConvTranspose2d(64, 32, kernel_size=4, stride=3),
+			nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
 			nn.BatchNorm2d(32),
 			nn.ReLU(),
-			nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=3),
+			nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=2),
 			nn.BatchNorm2d(image_channels),
 			nn.Sigmoid(),
 		).to(device)

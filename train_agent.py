@@ -194,7 +194,7 @@ for t in tqdm(range(max_timesteps)):
 		episode_timesteps = 0
 		episode_num += 1 
 
-		if episode_num % 50 == 0:
+		if episode_num % 100 == 0:
 			if not os.path.exists("./model_checkpoints"):
 				os.makedirs("./model_checkpoints")
 			time_str = time.strftime("%m%d%H%M", time.localtime())

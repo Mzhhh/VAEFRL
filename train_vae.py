@@ -14,6 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import gym
 import time
+from scipy.misc import imresize as resize
 
 
 # stolen form others' repos
@@ -45,6 +46,7 @@ parser.add_argument("--kl_weight", default=1, type=float)
 parser.add_argument("--kl_tolerance", default=0.5, type=float)
 parser.add_argument("--consistency_weight", default=1, type=float)
 parser.add_argument("--virtual_display", action="store_true")
+parser.add_argument("--no_critic", action="store_true")
 args = parser.parse_args()
 
 CRITIC_MODEL_FILE = args.load_model
@@ -103,9 +105,15 @@ max_action = env.action_space.high
 
 # model components
 
-buffer_raw = ReplayBuffer((3, 96, 96), action_dim, REPLAY_BUFFER_SIZE, device=device)
-policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
-policy_raw.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE))
+no_critic = args.no_critic
+
+buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=device)
+
+if not no_critic:
+    policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
+    policy_raw.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE))
+else:
+    policy_raw = None
 
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
@@ -129,7 +137,7 @@ state, done = env.reset(), False
 state_tf = process_state_image(state)  # for tf model
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-state = state / 255.0
+state = resize(state[:84, :, :], (64, 64)) / 255.0
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -147,7 +155,7 @@ for t in tqdm(range(max_timesteps)):
     next_state_tf = process_state_image(next_state)  # for tf
     state_frame_stack_queue.append(next_state_tf)
 
-    next_state = next_state / 255.0
+    next_state = resize(next_state[:84, :, :], (64, 64)) / 255.0
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -179,7 +187,7 @@ for t in tqdm(range(max_timesteps)):
 
         vae_loss_naked = vae_loss(vae_input, reconstruction, mu, logvar, t)
 
-        if consistency_weight > 0:
+        if not no_critic:
 
             Q_input = policy_raw.Q_value(batch).detach()
             Q_recon = policy_raw.Q_value((reconstruction, batch[1], None, None, None))  # only feed in reconstructed state & action
@@ -189,7 +197,7 @@ for t in tqdm(range(max_timesteps)):
             vae_loss_total = vae_loss_naked + consistency_weight * Q_consistency_loss_1
         
         else:
-            log_writer.add_scalar("vae/consistency_loss", 0.0, t+1)
+
             vae_loss_total = vae_loss_naked
             
 
@@ -214,17 +222,18 @@ for t in tqdm(range(max_timesteps)):
         state_tf = process_state_image(state)  # for tf model
         state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-        state = state / 255.0
+        state = resize(state[:84, :, :], (64, 64)) / 255.0
 
         episode_reward = 0
         episode_timesteps = 0
         episode_num += 1 
 
-        if episode_num % 50 == 0:
+        if episode_num % 100 == 0:
             if not os.path.exists("./model_checkpoints"):
                 os.makedirs("./model_checkpoints")
             time_str = time.strftime("%m%d%H%M", time.localtime())
             vae.save("./model_checkpoints/vae_eps_%d_%s" % (episode_num, time_str))
+            torch.save(vae_optimizer.state_dict(), "./model_checkpoints/vae_optim_eps_%d_%s" % (episode_num, time_str))
 
 ### --- TRAINING END --- ###
 
