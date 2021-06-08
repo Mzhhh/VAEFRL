@@ -39,7 +39,8 @@ parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time step
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
-parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--load_model", default="", type=str)            # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--pretrained_model", default="", type=str)    # load pretrained model 
 parser.add_argument("--kl_weight", default=1, type=float)
 parser.add_argument("--kl_tolerance", default=0.5, type=float)
 parser.add_argument("--consistency_weight", default=1, type=float)
@@ -47,6 +48,15 @@ parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
 
 CRITIC_MODEL_FILE = args.load_model
+
+PRETRAINED_MODEL = args.pretrained_model
+if PRETRAINED_MODEL.lower() == "newest":
+    avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
+    assert avail_models, "No available vae model"
+    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
+    PRETRAINED_MODEL = avail_models[0][0]
+    print(f"Using latest version: {PRETRAINED_MODEL}")
+
 
 REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
@@ -101,6 +111,8 @@ expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
 
 vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
+if PRETRAINED_MODEL:
+    vae.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
 vae_optimizer = optim.Adam(vae.parameters(), lr=lr)
 
 vae_loss = lambda original, reconstructed, mu, logvar, t: \
