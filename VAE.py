@@ -206,8 +206,8 @@ if __name__ == "__main__":
 	os.mkdir("./tmp/reconstruction")
 	show_index = np.random.choice(num_sample, show_image, replace=False)
 	for i, index in enumerate(show_index, start=1):
-		orig = state_array[int(index)].swapaxes(0, 1)
-		recon = vae_recon_np[int(index)]
+		orig = state_array[int(index)]
+		recon = vae_recon_np[int(index)].swapaxes(0, 1)
 		_, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 		ax1.imshow(orig)
 		ax2.imshow(recon)
