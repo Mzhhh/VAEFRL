@@ -114,7 +114,7 @@ def generate_results(model, input):
 
 	vae_input = torch.from_numpy(input.copy()).to(device).float().swapaxes(1, 3)
 	latent = model.encode(vae_input)[0].detach()
-	vae_recon, _, _ = model(vae_input)[0].detach()
+	vae_recon = model(vae_input)[0].detach()
 
 	latent_np = latent.cpu().numpy()
 	vae_recon_np = vae_recon.cpu().numpy()
