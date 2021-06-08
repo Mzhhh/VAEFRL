@@ -2,4 +2,4 @@
 
 Final project for Bayesian theory and computation @ PKU (2021 Spring).
 
-![FUCK BAYESIAN STAT](./assets/purefun_new.jpeg)
+![FUCK BAYESIAN STAT](./assets/purefun.jpeg)
