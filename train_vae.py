@@ -40,7 +40,8 @@ parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussi
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
-parser.add_argument("--kl_weight", default=0.1, type=float)
+parser.add_argument("--kl_weight", default=1, type=float)
+parser.add_argument("--kl_tolerance", default=0.5, type=float)
 parser.add_argument("--consistency_weight", default=1, type=float)
 parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
@@ -55,6 +56,7 @@ max_episode_steps = int(args.max_episode_steps)
 batch_size = int(args.batch_size)
 
 kl_weight = args.kl_weight
+kl_tolerance = args.kl_tolerance
 consistency_weight = args.consistency_weight
 
 lr = args.learning_rate
@@ -102,7 +104,7 @@ vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
 vae_optimizer = optim.Adam(vae.parameters(), lr=lr)
 
 vae_loss = lambda original, reconstructed, mu, logvar, t: \
-           VAELoss(original, reconstructed, mu, logvar, KL_weight=kl_weight, writer_info=(log_writer, t))
+    VAELoss(original, reconstructed, mu, logvar, KL_weight=kl_weight, KL_tol=kl_tolerance, writer_info=(log_writer, t))
 
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
 

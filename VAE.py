@@ -97,10 +97,14 @@ class CNNVAE(nn.Module):
 		self.load_state_dict(torch.load(filename))
 		
 
-def VAELoss(original, reconstructed, mu, logvar, KL_weight=1, writer_info=None):
+def VAELoss(original, reconstructed, mu, logvar, KL_weight=1, KL_tol=0.5, writer_info=None):
 
-	recon_loss = nn.L1Loss(reduction='mean')(original, reconstructed)
-	KL_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+	batch_size = mu.shape[0]
+	z_dim = mu.shape[1]
+
+	recon_loss = nn.MSELoss(reduction='sum')(original, reconstructed) / batch_size
+	KL_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1)
+	KL_loss = torch.mean(torch.maximum(KL_loss, torch.tensor(z_dim * KL_tol)))
 
 	if writer_info is not None:
 		writer, t = writer_info
