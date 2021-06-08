@@ -139,6 +139,14 @@ if __name__ == "__main__":
 	VAE_MODEL_FILE = args.load_model
 	Z_DIM = 32
 
+	# expert model
+	from DQN.CarRacingDQNAgent import CarRacingDQNAgent
+	from DQN.common_functions import *
+	from collections import deque
+
+	expert_model = CarRacingDQNAgent(epsilon=0)
+	expert_model.load("tf_best.h5")
+
 	# generate input
 	state_array = np.zeros((num_sample, 96, 96, 3))
 	collected = 0
@@ -156,10 +164,17 @@ if __name__ == "__main__":
 	while collected < num_sample:
 		if need_reset:
 			state, done = env.reset(), False
+			state_tf = process_state_image(state)  # for tf model
+			state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 			episode_step = 0
 		else:
-			state, _, done, _ = env.step(env.action_space.sample())
+			current_state_frame_stack = generate_state_frame_stack_from_queue(state_frame_stack_queue)
+			action = expert_model.act(current_state_frame_stack)
+			state, _, done, _ = env.step(action)
+			state_tf = process_state_image(state)  # for tf
+			state_frame_stack_queue.append(state_tf)
 			episode_step += 1
+
 		state_array[collected, :] = state.copy()
 		collected += 1
 		need_reset = done or (episode_step >= max_episode_steps)
@@ -170,6 +185,7 @@ if __name__ == "__main__":
 
 	latent_np, vae_recon_np = generate_results(vae, state_array/255.0)
 	vae_recon_np = (vae_recon_np.swapaxes(1, 3) * 255).astype(np.uint8).copy()
+	state_array = state_array.astype(np.uint8)
 
 	if os.path.exists("./tmp"):
 		shutil.rmtree("./tmp")
@@ -190,7 +206,7 @@ if __name__ == "__main__":
 	os.mkdir("./tmp/reconstruction")
 	show_index = np.random.choice(num_sample, show_image, replace=False)
 	for i, index in enumerate(show_index, start=1):
-		orig = state_array[int(index)]
+		orig = state_array[int(index)].swapaxes(0, 1)
 		recon = vae_recon_np[int(index)]
 		_, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 		ax1.imshow(orig)
