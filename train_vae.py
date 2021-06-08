@@ -186,7 +186,7 @@ for t in tqdm(range(max_timesteps)):
         vae_optimizer.step()
 
         log_writer.add_scalar("vae/loss_naked", vae_loss_naked.data, t+1)
-        log_writer.add_scalar("vae/consistency_loss", Q_consistency_loss_1.data, t+1)
+        # log_writer.add_scalar("vae/consistency_loss", Q_consistency_loss_1.data, t+1)
         log_writer.add_scalar("vae/loss_total", vae_loss_total.data, t+1)
 
         ### TRAINING ROUTINE END   ###
