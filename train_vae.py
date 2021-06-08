@@ -118,7 +118,7 @@ else:
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
 
-vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
+vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
 if PRETRAINED_MODEL:
     vae.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
 vae_optimizer = optim.Adam(vae.parameters(), lr=lr)
