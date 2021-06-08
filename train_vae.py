@@ -15,7 +15,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 import gym
 import time
-from scipy.misc import imresize as resize
 
 
 # stolen form others' repos
