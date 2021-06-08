@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
 	for z in range(Z_DIM):
 		_, ax = plt.subplots(figsize=(6, 6))
-		sns.distplot(latent_np[:, z].flatten(), ax=ax)
+		sns.histplot(latent_np[:, z].flatten(), ax=ax)
 		plt.savefig(f"./tmp/latent/dim{z+1}.png", dpi=200, bbox_inches="tight")
 		plt.close()
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 	os.mkdir("./tmp/reconstruction")
 	show_index = np.random.choice(num_sample, show_image, replace=False)
 	for i, index in enumerate(show_index, start=1):
-		orig = state_array[int(index)].swapaxes(0, 2)
+		orig = state_array[int(index)]
 		recon = vae_recon_np[int(index)]
 		_, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 		ax1.imshow(orig)
