@@ -112,10 +112,9 @@ def VAELoss(original, reconstructed, mu, logvar, KL_weight=1, writer_info=None):
 
 def generate_results(model, input):
 
-	model.eval()
 	vae_input = torch.from_numpy(input.copy()).to(device).float().swapaxes(1, 3)
 	latent = model.encode(vae_input)[0].detach()
-	vae_recon, _, _ = model.vae(vae_input)[0].detach()
+	vae_recon, _, _ = model(vae_input)[0].detach()
 
 	latent_np = latent.cpu().numpy()
 	vae_recon_np = vae_recon.cpu().numpy()
@@ -167,6 +166,7 @@ if __name__ == "__main__":
 	
 	vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
 	vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
+	vae.eval()
 
 	latent_np, vae_recon_np = generate_results(vae, state_array/255.0)
 	vae_recon_np = (vae_recon_np.swapaxes(1, 3) * 255).astype(np.uint8).copy()
