@@ -145,7 +145,6 @@ if __name__ == "__main__":
 	collected = 0
 
 	from pyvirtualdisplay import Display
-	from IPython.display import clear_output
 	display = Display(visible=0, size=(400, 300))
 	display.start()
 
@@ -163,6 +162,7 @@ if __name__ == "__main__":
 			state, _, done, _ = env.step(env.action_space.sample())
 			episode_step += 1
 		state_array[collected, :] = state.copy()
+		collected += 1
 		need_reset = done or (episode_step >= max_episode_steps)
 	
 	vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
