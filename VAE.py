@@ -2,6 +2,7 @@ import os
 import shutil
 import argparse
 import numpy as np
+from numpy.core.fromnumeric import clip
 
 import torch
 import torch.nn as nn
@@ -141,7 +142,7 @@ if __name__ == "__main__":
 
 	max_episode_steps = int(args.max_episode_steps)
 	VAE_MODEL_FILE = args.load_model
-	if not VAE_MODEL_FILE:  # default case
+	if VAE_MODEL_FILE.lower() == "newest":  # default case
 		avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
 		assert avail_models, "No available vae model"
 		avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 	expert_model.load("tf_best.h5")
 
 	# generate input
-	state_array = np.zeros((num_sample, 96, 96, 3))
+	state_array = np.zeros((num_sample, 64, 64, 3))
 	collected = 0
 
 	from pyvirtualdisplay import Display
@@ -169,6 +170,8 @@ if __name__ == "__main__":
 	import gym
 	env_name = "CarRacing-v0"
 	env = gym.make(env_name)
+
+	from util import clip_image
 
 	need_reset = True
 	episode_step = 0
@@ -185,8 +188,8 @@ if __name__ == "__main__":
 			state_tf = process_state_image(state)  # for tf
 			state_frame_stack_queue.append(state_tf)
 			episode_step += 1
-
-		state_array[collected, :] = state.copy()
+		
+		state_array[collected, :] = clip_image(state, normalize=False).copy()
 		collected += 1
 		need_reset = done or (episode_step >= max_episode_steps)
 	
