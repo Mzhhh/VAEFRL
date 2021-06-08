@@ -141,6 +141,12 @@ if __name__ == "__main__":
 
 	max_episode_steps = int(args.max_episode_steps)
 	VAE_MODEL_FILE = args.load_model
+	if not VAE_MODEL_FILE:  # default case
+		avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
+		assert avail_models, "No available vae model"
+		avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
+		VAE_MODEL_FILE = avail_models[0][0]  # newest
+
 	Z_DIM = 32
 
 	# expert model
@@ -191,23 +197,29 @@ if __name__ == "__main__":
 	vae_recon_np = (vae_recon_np.swapaxes(1, 3) * 255).astype(np.uint8).copy()
 	state_array = state_array.astype(np.uint8)
 
-	if os.path.exists("./tmp"):
-		shutil.rmtree("./tmp")
-	os.mkdir("./tmp")
+	# handle directories
+	os.makedirs("./tmp/latent", exist_ok=True)
+	os.makedirs("./tmp/reconstruction", exist_ok=True)
+	for file in os.listdir("./tmp/latent"):
+		if file.startswith("dim"):
+			os.remove(os.path.join("./tmp/latent", file))
+	for file in os.listdir("./tmp/reconstruction"):
+		if file.startswith("pair"):
+			os.remove(os.path.join("./tmp/reconstruction", file))
 	
 	# plot latent distributions
-	os.mkdir("./tmp/latent")
 	from matplotlib import pyplot as plt
 	import seaborn as sns
+	from statsmodels import api as sm
 
 	for z in range(Z_DIM):
-		_, ax = plt.subplots(figsize=(6, 6))
-		sns.histplot(latent_np[:, z].flatten(), ax=ax)
+		_, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+		sns.histplot(latent_np[:, z].flatten(), ax=ax1)
+		sm.qqplot(latent_np[:, z].flatten(), ax=ax2, line="45")
 		plt.savefig(f"./tmp/latent/dim{z+1}.png", dpi=200, bbox_inches="tight")
 		plt.close()
 
 	# plot latent distributions
-	os.mkdir("./tmp/reconstruction")
 	show_index = np.random.choice(num_sample, show_image, replace=False)
 	for i, index in enumerate(show_index, start=1):
 		orig = state_array[int(index)]
