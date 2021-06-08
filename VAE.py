@@ -146,6 +146,7 @@ if __name__ == "__main__":
 		assert avail_models, "No available vae model"
 		avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
 		VAE_MODEL_FILE = avail_models[0][0]  # newest
+		print(f"Using latest version: {VAE_MODEL_FILE}")
 
 	Z_DIM = 32
 
