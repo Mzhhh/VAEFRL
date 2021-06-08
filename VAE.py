@@ -193,7 +193,7 @@ if __name__ == "__main__":
 		collected += 1
 		need_reset = done or (episode_step >= max_episode_steps)
 	
-	vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
+	vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
 	vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
 	vae.eval()
 

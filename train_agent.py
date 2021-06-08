@@ -95,7 +95,7 @@ max_action = env.action_space.high
 policy_repr = DDPG.DDPG(32, action_dim, min_action, max_action)
 buffer_repr = ReplayBuffer([32], action_dim, REPLAY_BUFFER_SIZE, device=device)
 
-vae = CNNVAE(image_channels=3, h_dim=256, z_dim=32)
+vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
 vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
 vae.eval()  # fix batchnorm
 
@@ -133,7 +133,7 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10):
 # step 3: fix VAE, train agent
 
 state, done = env.reset(), False
-state = state / 255.0
+state = clip_image(state)
 
 state_repr = get_encoded_raw(vae, state).cpu().numpy()
 
@@ -151,7 +151,7 @@ for t in tqdm(range(max_timesteps)):
 
 	# Perform action
 	next_state, reward, done, _ = env.step(action)
-	next_state = next_state / 255.0
+	next_state = clip_image(next_state)
 
 	next_state_repr = get_encoded_raw(vae, next_state).cpu().numpy()
 
@@ -186,7 +186,7 @@ for t in tqdm(range(max_timesteps)):
 		log_writer.add_scalar("agent/episode_reward", episode_reward, t+1)
 		# Reset environment
 		state, done = env.reset(), False
-		state = state / 255.0
+		state = clip_image(state)
 
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		

@@ -2,6 +2,7 @@ import os
 import argparse
 
 import numpy as np
+from numpy.core.fromnumeric import clip
 from tqdm import tqdm
 from collections import deque
 
@@ -22,6 +23,8 @@ from DQN.common_functions import *
 
 from TD3 import DDPG, DDPG_CNN
 from TD3.utils import ReplayBuffer
+
+from util import clip_image
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -80,7 +83,7 @@ max_action = env.action_space.high
 
 # model components
 
-buffer_raw = ReplayBuffer((3, 96, 96), action_dim, REPLAY_BUFFER_SIZE, device=device)
+buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=device)
 policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
 
 expert_model = CarRacingDQNAgent(epsilon=0)
@@ -96,7 +99,7 @@ state, done = env.reset(), False
 state_tf = process_state_image(state)  # for tf model
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-state = state / 255.0
+state = clip_image(state)
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -114,7 +117,7 @@ for t in tqdm(range(max_timesteps)):
     next_state_tf = process_state_image(next_state)  # for tf
     state_frame_stack_queue.append(next_state_tf)
 
-    next_state = next_state / 255.0
+    next_state = clip_image(state)
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -161,7 +164,7 @@ for t in tqdm(range(max_timesteps)):
         state_tf = process_state_image(state)  # for tf model
         state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-        state = state / 255.0
+        state = clip_image(state)
 
         episode_reward = 0
         episode_timesteps = 0
