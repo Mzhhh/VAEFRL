@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 import gym
 
+from PIL import Image
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -27,3 +29,7 @@ def get_encoded_raw(model, state, detach=True):
 def get_reshaped(state, scale=True):
     scale_factor = (1/255.0) if scale else 1.0
     return np.swapaxes(state.copy(), 0, 2)* scale_factor
+
+def clip_image(img, normalize=True):
+    resized = np.array(Image.fromarray(img[:84, :, :].astype(np.uint8)).resize((64, 64)))
+    return (resized.astype(np.float) / 255.0) if normalize else resized

@@ -1,5 +1,6 @@
 import os
 import argparse
+from util import clip_image
 
 import numpy as np
 from tqdm import tqdm
@@ -137,7 +138,7 @@ state, done = env.reset(), False
 state_tf = process_state_image(state)  # for tf model
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-state = resize(state[:84, :, :], (64, 64)) / 255.0
+state = clip_image(state)
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -155,7 +156,7 @@ for t in tqdm(range(max_timesteps)):
     next_state_tf = process_state_image(next_state)  # for tf
     state_frame_stack_queue.append(next_state_tf)
 
-    next_state = resize(next_state[:84, :, :], (64, 64)) / 255.0
+    next_state = clip_image(next_state)
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -222,7 +223,7 @@ for t in tqdm(range(max_timesteps)):
         state_tf = process_state_image(state)  # for tf model
         state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
-        state = resize(state[:84, :, :], (64, 64)) / 255.0
+        state = clip_image(state)
 
         episode_reward = 0
         episode_timesteps = 0
