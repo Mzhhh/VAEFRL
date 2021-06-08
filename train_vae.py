@@ -168,14 +168,18 @@ for t in tqdm(range(max_timesteps)):
         vae_loss_naked = vae_loss(vae_input, reconstruction, mu, logvar, t)
 
         if consistency_weight > 0:
+
             Q_input = policy_raw.Q_value(batch).detach()
             Q_recon = policy_raw.Q_value((reconstruction, batch[1], None, None, None))  # only feed in reconstructed state & action
             Q_consistency_loss_1 = nn.MSELoss(reduction="mean")(Q_input, Q_recon)  # between original & reconstructed
-
+            
+            log_writer.add_scalar("vae/consistency_loss", Q_consistency_loss_1.data, t+1)
             vae_loss_total = vae_loss_naked + consistency_weight * Q_consistency_loss_1
         
         else:
+            log_writer.add_scalar("vae/consistency_loss", 0.0, t+1)
             vae_loss_total = vae_loss_naked
+            
 
         vae_loss_total.backward()
         
