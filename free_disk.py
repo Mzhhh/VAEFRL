@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     instruction = input("Continue? [y/n]")
     if instruction.lower() == "y":
-        for list in sum(remove_list, []):
+        for f in sum(remove_list, []):
             os.remove(os.path.join(directory, f))
         print("Done!")
     else:
