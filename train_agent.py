@@ -112,7 +112,7 @@ vae.load(os.path.join(VAE_MODEL_PATH, VAE_MODEL_FILE))
 vae.eval()  # fix batchnorm
 
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
-
+LOG_INTERVAL = 10
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environments
@@ -156,7 +156,7 @@ for t in tqdm(range(max_timesteps)):
 
 	# Select an action
 	if t < start_timesteps:
-		action = env.action_space.sample()
+		action = min_action + (max_action - min_action) * np.random.rand(*max_action.shape)
 	else:
 		action = policy_repr.select_action(state_repr)
 		action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
@@ -186,8 +186,10 @@ for t in tqdm(range(max_timesteps)):
 		### TRAINING ROUTINE START ###
 
 		cr_loss, ac_loss = policy_repr.train(buffer_repr)
-		log_writer.add_scalar("critic/loss", cr_loss, t+1)
-		log_writer.add_scalar("actor/loss", ac_loss, t+1)
+
+		if t % LOG_INTERVAL == 1:
+			log_writer.add_scalar("critic/loss", cr_loss, t+1)
+			log_writer.add_scalar("actor/loss", ac_loss, t+1)
 
 		### TRAINING ROUTINE END   ###
 
