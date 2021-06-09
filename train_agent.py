@@ -118,13 +118,13 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10):
 	avg_reward = 0.
 	for _ in range(eval_episodes):
 		state, done = eval_env.reset(), False
-		state = state / 255.0  # normalize
+		state = clip_image(state)
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
 		while not done:
 			action = policy.select_action(state_repr)
 			state, reward, done, _ = eval_env.step(action)
-			state = state / 255.0
+			state = clip_image(state)
 			state_repr = get_encoded_raw(vae, state).cpu().numpy()
 
 			avg_reward += reward
@@ -208,7 +208,7 @@ for t in tqdm(range(max_timesteps)):
 			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
-			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed)
+			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5)
 			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
 
 
