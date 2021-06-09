@@ -48,6 +48,9 @@ parser.add_argument("--eval_freq", default=50, type=float)
 parser.add_argument("--virtual_display", action="store_true")
 parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 parser.add_argument("--constraint_action", action="store_true")
+parser.add_argument("--min_gas", default=0.6, type=float)
+parser.add_argument("--max_gas", default=1.0, type=float)
+parser.add_argument("--max_break", default=1.0, type=float)
 args = parser.parse_args()
 
 VAE_MODEL_PATH = args.model_path
@@ -96,8 +99,8 @@ state_dim_image = env.observation_space.shape
 action_dim = env.action_space.shape[0]
 
 if args.constraint_action:
-	min_action = np.array([-1.0, 0.6, 0.0])
-	max_action = np.array([1.0, 1.0, 0.2])
+	min_action = np.array([-1.0, args.min_gas, 0.0])
+	max_action = np.array([1.0, args.max_gas, args.max_break])
 else:
 	min_action = env.action_space.low
 	max_action = env.action_space.high
