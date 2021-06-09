@@ -50,7 +50,8 @@ parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 parser.add_argument("--constraint_action", action="store_true")
 parser.add_argument("--min_gas", default=0.6, type=float)
 parser.add_argument("--max_gas", default=1.0, type=float)
-parser.add_argument("--max_break", default=1.0, type=float)
+parser.add_argument("--max_break", default=0.2, type=float)
+parser.add_argument("--tag", default="", type=str)
 args = parser.parse_args()
 
 VAE_MODEL_PATH = args.model_path
@@ -114,7 +115,8 @@ vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
 vae.load(os.path.join(VAE_MODEL_PATH, VAE_MODEL_FILE))
 vae.eval()  # fix batchnorm
 
-log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
+TAG = args.tag
+log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime())+TAG, comment="logWriter")
 LOG_INTERVAL = 10
 
 # Runs policy for X episodes and returns average reward
@@ -215,7 +217,7 @@ for t in tqdm(range(max_timesteps)):
 			if not os.path.exists("./model_checkpoints"):
 				os.makedirs("./model_checkpoints")
 			time_str = time.strftime("%m%d%H%M", time.localtime())
-			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str))
+			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
 			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5)
