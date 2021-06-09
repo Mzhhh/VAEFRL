@@ -100,8 +100,8 @@ state_dim_image = env.observation_space.shape
 action_dim = env.action_space.shape[0]
 
 if args.constraint_action:
-	min_action = np.array([-1.0, args.min_gas, 0.0]).astype(np.float)
-	max_action = np.array([1.0, args.max_gas, args.max_break]).astype(np.float)
+	min_action = np.array([-1.0, args.min_gas, 0.0]).astype(np.float32)
+	max_action = np.array([1.0, args.max_gas, args.max_break]).astype(np.float32)
 else:
 	min_action = env.action_space.low
 	max_action = env.action_space.high
@@ -161,7 +161,7 @@ for t in tqdm(range(max_timesteps)):
 
 	# Select an action
 	if t < start_timesteps:
-		action = min_action + (max_action - min_action) * np.random.rand(*max_action.shape).astype(np.float)
+		action = min_action + (max_action - min_action) * np.random.rand(*max_action.shape).astype(np.float32)
 	else:
 		action = policy_repr.select_action(state_repr)
 		action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
