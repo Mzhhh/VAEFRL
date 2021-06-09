@@ -47,6 +47,7 @@ parser.add_argument("--load_model", default="", type=str)                  # Mod
 parser.add_argument("--eval_freq", default=50, type=float)
 parser.add_argument("--virtual_display", action="store_true")
 parser.add_argument("--model_path", default="./model_checkpoints", type=str)
+parser.add_argument("--constraint_action", action="store_true")
 args = parser.parse_args()
 
 VAE_MODEL_PATH = args.model_path
@@ -94,8 +95,12 @@ episode_num = 0
 state_dim_image = env.observation_space.shape
 action_dim = env.action_space.shape[0]
 
-min_action = env.action_space.low
-max_action = env.action_space.high
+if args.constraint_action:
+	min_action = np.array([-1.0, 0.6, 0.0])
+	max_action = np.array([1.0, 1.0, 0.2])
+else:
+	min_action = env.action_space.low
+	max_action = env.action_space.high
 
 # model components
 
