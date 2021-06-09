@@ -122,7 +122,7 @@ vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
 vae_optimizer = optim.Adam(vae.parameters(), lr=lr)
 if PRETRAINED_MODEL:
     vae.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
-    vae_optimizer.load_state_dict(os.path.join("./model_checkpoints", PRETRAINED_MODEL.replace("vae_", "vae_optim_")))
+    vae_optimizer.load_state_dict(torch.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL.replace("vae_", "vae_optim_"))))
 
 vae_loss = lambda original, reconstructed, mu, logvar, t: \
     VAELoss(original, reconstructed, mu, logvar, KL_weight=kl_weight, KL_tol=kl_tolerance, writer_info=(log_writer, t))
