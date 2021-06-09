@@ -46,10 +46,17 @@ parser.add_argument("--learning_rate", default=1e-4)                      # Targ
 parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
 parser.add_argument("--eval_freq", default=50, type=float)
 parser.add_argument("--virtual_display", action="store_true")
+parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 args = parser.parse_args()
 
-
+VAE_MODEL_PATH = args.model_path
 VAE_MODEL_FILE = args.load_model
+if VAE_MODEL_FILE.lower() == "newest":
+    avail_models = [f for f in os.listdir(VAE_MODEL_PATH) if f.startswith("vae")]
+    assert avail_models, "No available vae model"
+    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
+    VAE_MODEL_FILE = avail_models[0][0]
+    print(f"Using latest version: {VAE_MODEL_FILE}")
 
 REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
@@ -96,7 +103,7 @@ policy_repr = DDPG.DDPG(32, action_dim, min_action, max_action)
 buffer_repr = ReplayBuffer([32], action_dim, REPLAY_BUFFER_SIZE, device=device)
 
 vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
-vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
+vae.load(os.path.join(VAE_MODEL_PATH, VAE_MODEL_FILE))
 vae.eval()  # fix batchnorm
 
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
