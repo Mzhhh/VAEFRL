@@ -33,8 +33,8 @@ if __name__ == "__main__":
         files_with_prefix = sorted(files_with_prefix, key=lambda s: re.search(r"(\d+)\_(\d+)", s).groups()[1])
         files_to_remove = files_with_prefix[:-num_keep]
         if files_to_remove:
-            remove_start = re.search(r"(\d+)\_(\d+)", files_to_remove[0])[1]
-            remove_end = re.search(r"(\d+)\_(\d+)", files_to_remove[-1])[1]
+            remove_start = re.search(r"(\d+)\_(\d+)", files_to_remove[0]).groups()[1]
+            remove_end = re.search(r"(\d+)\_(\d+)", files_to_remove[-1]).groups()[1]
             remove_list.append(files_to_remove)
             print(f"Pending task: {prefix}, {remove_start} ~ {remove_end} ({len(files_to_remove)} files)")
 
