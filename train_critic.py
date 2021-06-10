@@ -1,5 +1,7 @@
 import os
 import argparse
+import re
+from train_vae import PRETRAINED_MODEL
 
 import numpy as np
 from numpy.core.fromnumeric import clip
@@ -39,6 +41,7 @@ parser.add_argument("--max_episode_steps", default=1e2, type=float)
 parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
+parser.add_argument("--pretrained_model", default="", type=str)    # load pretrained model 
 parser.add_argument("--discount", default=0.99, type=float)  
 parser.add_argument("--virtual_display", action="store_true")
 args = parser.parse_args()
@@ -53,6 +56,8 @@ discount = args.discount
 
 eval_freq = -1  # expert model
 start_timesteps = 0  # expert model
+
+PRETRAINED_MODEL = args.pretrained_model
 
 ### --- Hyperparameters END   --- ###
 
@@ -83,8 +88,17 @@ max_action = env.action_space.high
 
 # model components
 
+if PRETRAINED_MODEL.lower() == "newest":
+    avail_files = [f for f in os.listdir("./model_checkpoints") if f.startswith("critic")]
+    avail_files = sorted(avail_files, key=lambda s: re.search("(\d+)\_(\d+)", s).groups()[-1], reverse=True)
+    PRETRAINED_MODEL = "_".join(avail_files[0].split("_")[:4])
+    print("Using pretrained model:", PRETRAINED_MODEL)
+
 buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=device)
 policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
+
+if PRETRAINED_MODEL:
+    policy_raw.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
 
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
