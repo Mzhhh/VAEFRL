@@ -121,21 +121,23 @@ LOG_INTERVAL = 10
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environments
-def eval_policy(vae, policy, env_name, seed, eval_episodes=10):
+def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps=100):
 	eval_env = gym.make(env_name)
 	eval_env.seed(seed + 100)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
+		episode_step = 0
 		state, done = eval_env.reset(), False
 		state = clip_image(state)
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
-		while not done:
+		while not done and (episode_timesteps < 0 or episode_step < episode_timesteps):
 			action = policy.select_action(state_repr)
 			state, reward, done, _ = eval_env.step(action)
 			state = clip_image(state)
 			state_repr = get_encoded_raw(vae, state).cpu().numpy()
+			episode_step += 1
 
 			avg_reward += reward
 
@@ -220,7 +222,7 @@ for t in tqdm(range(max_timesteps)):
 			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
-			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5)
+			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5, max_episode_steps)
 			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
 
 
