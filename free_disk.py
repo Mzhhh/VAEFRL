@@ -33,7 +33,7 @@ if __name__ == "__main__":
         files_with_prefix = sorted(files_with_prefix, key=lambda s: re.search(r"(\d+)\_(\d+)", s)[1])
         files_to_remove = files_with_prefix[:-num_keep]
         remove_list.append(files_to_remove)
-        print(f"Pending task: {prefix}, {files_to_remove[0].split('_')[-1]} ~ {files_to_remove[-1].split('_')[-1]} ({len(files_to_remove)} files)")
+        print(f"Pending task: {prefix}, {re.search(r'\d+\_\d+', files_to_remove[0]).group()} ~ {re.search(r'\d+\_\d+', files_to_remove[-1]).group()} ({len(files_to_remove)} files)")
 
     instruction = input("Continue? [y/n]")
     if instruction.lower() == "y":
