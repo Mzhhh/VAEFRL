@@ -98,7 +98,9 @@ buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=de
 policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
 
 if PRETRAINED_MODEL:
-    policy_raw.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
+    full_path = os.path.join("./model_checkpoints", PRETRAINED_MODEL)
+    print("Full path:", full_path)
+    policy_raw.load(full_path)
 
 expert_model = CarRacingDQNAgent(epsilon=0)
 expert_model.load("tf_best.h5")
