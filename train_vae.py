@@ -58,7 +58,7 @@ CRITIC_MODEL_PATH = args.model_path
 CRITIC_MODEL_FILE = args.load_model
 if CRITIC_MODEL_FILE.lower() == "newest":
     avail_models = [f for f in os.listdir(CRITIC_MODEL_PATH) if f.startswith("critic")]
-    avail_model_prefix = sorted(list(set([re.search(r"critic\_eps\_\d+\_\d+")]).group()), key=lambda s: s.split("_")[-1])
+    avail_model_prefix = sorted(list(set([re.search(r"critic\_eps\_\d+\_\d+", f).group() for f in avail_models])), key=lambda s: s.split("_")[-1])
     assert avail_models, "No available critic model"
     CRITIC_MODEL_FILE = avail_model_prefix[0]
     print(f"Using latest version: {CRITIC_MODEL_FILE}")
