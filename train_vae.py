@@ -141,7 +141,7 @@ if PRETRAINED_MODEL:
 vae_loss = lambda original, reconstructed, mu, logvar, t: \
     VAELoss(original, reconstructed, mu, logvar, KL_weight=kl_weight, KL_tol=kl_tolerance, writer_info=(log_writer, t))
 
-log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime()), comment="logWriter")
+log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime())+args.tag, comment="logWriter")
 
 
 ### --- TRAINING START --- ### 
@@ -247,7 +247,7 @@ for t in tqdm(range(max_timesteps)):
             if not os.path.exists("./model_checkpoints"):
                 os.makedirs("./model_checkpoints")
             time_str = time.strftime("%m%d%H%M", time.localtime())
-            vae.save("./model_checkpoints/vae_eps_%d_%s" % (episode_num, time_str))
+            vae.save("./model_checkpoints/vae_eps%s_%d_%s" % (("_"+args.tag) if args.tag else "", episode_num, time_str))
             torch.save(vae_optimizer.state_dict(), "./model_checkpoints/vae_optim_eps_%d_%s" % (episode_num, time_str))
 
 ### --- TRAINING END --- ###
