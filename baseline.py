@@ -1,5 +1,6 @@
 import os
 import argparse
+import re
 
 import numpy as np
 from tqdm import tqdm
@@ -21,7 +22,6 @@ import time
 from VAE import *
 from util import *
 
-
 from TD3 import DDPG, DDPG_CNN
 from TD3.utils import ReplayBuffer
 
@@ -40,25 +40,15 @@ parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time step
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
-parser.add_argument("--load_model", default="", type=str)                  # Model load file name, "" doesn't load, "default" uses file_name
 parser.add_argument("--eval_freq", default=50, type=float)
 parser.add_argument("--virtual_display", action="store_true")
-parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 parser.add_argument("--constraint_action", action="store_true")
+parser.add_argument("--pretrained_model", default="", type=str)    # load pretrained model 
 parser.add_argument("--min_gas", default=0.6, type=float)
 parser.add_argument("--max_gas", default=1.0, type=float)
 parser.add_argument("--max_break", default=0.2, type=float)
 parser.add_argument("--tag", default="", type=str)
 args = parser.parse_args()
-
-VAE_MODEL_PATH = args.model_path
-VAE_MODEL_FILE = args.load_model
-if VAE_MODEL_FILE.lower() == "newest":
-    avail_models = [f for f in os.listdir(VAE_MODEL_PATH) if f.startswith("vae")]
-    assert avail_models, "No available vae model"
-    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
-    VAE_MODEL_FILE = avail_models[0][0]
-    print(f"Using latest version: {VAE_MODEL_FILE}")
 
 REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
@@ -73,6 +63,16 @@ lr = args.learning_rate
 start_timesteps = args.start_timesteps
 
 ### --- Hyperparameters END   --- ###
+
+# load from model checkpoint
+PRETRAINED_MODEL = args.pretrained_model
+if PRETRAINED_MODEL.lower() == "newest":
+    avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("agent")]
+    avail_model_prefix = sorted(list(set([re.search(r"agent\_eps\_\d+\_\d+", f).group() for f in avail_models])), key=lambda s: s.split("_")[-1])
+    assert avail_models, "No available critic model"
+    PRETRAINED_MODEL = avail_model_prefix[0]
+    print(f"Using latest version: {PRETRAINED_MODEL}")
+
 
 
 # setup virtual display
@@ -105,16 +105,15 @@ else:
 
 # model components
 
-policy_repr = DDPG.DDPG(32, action_dim, min_action, max_action)
-buffer_repr = ReplayBuffer([32], action_dim, REPLAY_BUFFER_SIZE, device=device)
-
-vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
-vae.load(os.path.join(VAE_MODEL_PATH, VAE_MODEL_FILE))
-vae.eval()  # fix batchnorm
+buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=device)
+policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
+if PRETRAINED_MODEL:
+    policy_raw.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
 
 TAG = args.tag
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime())+TAG, comment="logWriter")
 LOG_INTERVAL = 10
+
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environments
@@ -127,13 +126,11 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 		episode_step = 0
 		state, done = eval_env.reset(), False
 		state = clip_image(state)
-		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
 		while not done and (episode_timesteps < 0 or episode_step < episode_timesteps):
-			action = policy.select_action(state_repr)
+			action = policy.select_action(state)
 			state, reward, done, _ = eval_env.step(action)
 			state = clip_image(state)
-			state_repr = get_encoded_raw(vae, state).cpu().numpy()
 			episode_step += 1
 
 			avg_reward += reward
@@ -145,14 +142,8 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 
 ### --- TRAINING START --- ### 
 
-
-# step 3: fix VAE, train agent
-
 state, done = env.reset(), False
 state = clip_image(state)
-
-state_repr = get_encoded_raw(vae, state).cpu().numpy()
-
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -162,25 +153,20 @@ for t in tqdm(range(max_timesteps)):
 	if t < start_timesteps:
 		action = min_action + (max_action - min_action) * np.random.rand(*max_action.shape).astype(np.float32)
 	else:
-		action = policy_repr.select_action(state_repr)
+		action = policy_raw.select_action(state)
 		action = (action + np.random.normal(0, max_action * expl_noise, size=action_dim)).clip(min_action, max_action)
 
 	# Perform action
 	next_state, reward, done, _ = env.step(action)
 	next_state = clip_image(next_state)
 
-	next_state_repr = get_encoded_raw(vae, next_state).cpu().numpy()
-
 	done_bool = float(done or (episode_timesteps > max_episode_steps))
 
 	# Store data in replay buffer
 
-	state_repr = state_repr.copy()
-	next_state_repr = next_state_repr.copy()
+	buffer_raw.add_vector(state, action, next_state, reward, done_bool)
 
-	buffer_repr.add_vector(state_repr, action, next_state_repr, reward, done_bool)
-
-	state_repr = next_state_repr
+	state = next_state
 
 	episode_reward += reward
 
@@ -189,7 +175,7 @@ for t in tqdm(range(max_timesteps)):
 		
 		### TRAINING ROUTINE START ###
 
-		cr_loss, ac_loss = policy_repr.train(buffer_repr)
+		cr_loss, ac_loss = policy_raw.train(buffer_raw)
 
 		if t % LOG_INTERVAL == 1:
 			log_writer.add_scalar("critic/loss", cr_loss, t+1)
@@ -206,7 +192,6 @@ for t in tqdm(range(max_timesteps)):
 		state, done = env.reset(), False
 		state = clip_image(state)
 
-		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
 		episode_reward = 0
 		episode_timesteps = 0
@@ -216,13 +201,11 @@ for t in tqdm(range(max_timesteps)):
 			if not os.path.exists("./model_checkpoints"):
 				os.makedirs("./model_checkpoints")
 			time_str = time.strftime("%m%d%H%M", time.localtime())
-			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
+			policy_raw.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
-			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5, max_episode_steps)
+			avg_reward = eval_policy(vae, policy_raw, env_name, args.seed, 5, max_episode_steps)
 			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
-
-
 
 ### --- TRAINING END --- ###
 
