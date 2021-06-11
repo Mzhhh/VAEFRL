@@ -42,15 +42,28 @@ parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussi
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
 parser.add_argument("--learning_rate", default=1e-4)                      # Target network update rate
 parser.add_argument("--load_model", default="", type=str)            # Model load file name, "" doesn't load, "default" uses file_name
+parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 parser.add_argument("--pretrained_model", default="", type=str)    # load pretrained model 
 parser.add_argument("--kl_weight", default=1, type=float)
 parser.add_argument("--kl_tolerance", default=0.5, type=float)
 parser.add_argument("--consistency_weight", default=1, type=float)
 parser.add_argument("--virtual_display", action="store_true")
 parser.add_argument("--no_critic", action="store_true")
+parser.add_argument("--tag", default="", type=str)
 args = parser.parse_args()
 
+
+CRITIC_MODEL_PATH = args.model_path
 CRITIC_MODEL_FILE = args.load_model
+if CRITIC_MODEL_FILE.lower() == "newest":
+    avail_models = [f for f in os.listdir(CRITIC_MODEL_PATH) if f.startswith("vae")]
+    assert avail_models, "No available critic model"
+    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
+    CRITIC_MODEL_FILE = avail_models[0][0]
+    print(f"Using latest version: {CRITIC_MODEL_FILE}")
+
+
+# only supports directory ./model_checkpoints
 
 PRETRAINED_MODEL = args.pretrained_model
 if PRETRAINED_MODEL.lower() == "newest":
