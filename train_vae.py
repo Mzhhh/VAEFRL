@@ -1,5 +1,6 @@
 import os
 import argparse
+import re
 from util import clip_image
 
 import numpy as np
@@ -56,15 +57,14 @@ args = parser.parse_args()
 CRITIC_MODEL_PATH = args.model_path
 CRITIC_MODEL_FILE = args.load_model
 if CRITIC_MODEL_FILE.lower() == "newest":
-    avail_models = [f for f in os.listdir(CRITIC_MODEL_PATH) if f.startswith("vae")]
+    avail_models = [f for f in os.listdir(CRITIC_MODEL_PATH) if f.startswith("critic")]
+    avail_model_prefix = sorted(list(set([re.search(r"critic\_eps\_\d+\_\d+")]).group()), key=lambda s: s.split("_")[-1])
     assert avail_models, "No available critic model"
-    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
-    CRITIC_MODEL_FILE = avail_models[0][0]
+    CRITIC_MODEL_FILE = avail_model_prefix[0]
     print(f"Using latest version: {CRITIC_MODEL_FILE}")
 
 
 # only supports directory ./model_checkpoints
-
 PRETRAINED_MODEL = args.pretrained_model
 if PRETRAINED_MODEL.lower() == "newest":
     avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
@@ -125,7 +125,7 @@ buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=de
 
 if not no_critic:
     policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
-    policy_raw.load(os.path.join("./model_checkpoints", CRITIC_MODEL_FILE))
+    policy_raw.load(os.path.join(CRITIC_MODEL_PATH, CRITIC_MODEL_FILE))
 else:
     policy_raw = None
 
