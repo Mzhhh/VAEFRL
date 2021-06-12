@@ -67,11 +67,11 @@ start_timesteps = args.start_timesteps
 # load from model checkpoint
 PRETRAINED_MODEL = args.pretrained_model
 if PRETRAINED_MODEL.lower() == "newest":
-    avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("agent")]
-    avail_model_prefix = sorted(list(set([re.search(r"agent\_eps\_\d+\_\d+", f).group() for f in avail_models])), key=lambda s: s.split("_")[-1])
-    assert avail_models, "No available critic model"
-    PRETRAINED_MODEL = avail_model_prefix[0]
-    print(f"Using latest version: {PRETRAINED_MODEL}")
+	avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("agent")]
+	avail_model_prefix = sorted(list(set([re.search(r"agent\_eps\_\d+\_\d+", f).group() for f in avail_models])), key=lambda s: s.split("_")[-1])
+	assert avail_models, "No available critic model"
+	PRETRAINED_MODEL = avail_model_prefix[0]
+	print(f"Using latest version: {PRETRAINED_MODEL}")
 
 
 
@@ -108,7 +108,7 @@ else:
 buffer_raw = ReplayBuffer((3, 64, 64), action_dim, REPLAY_BUFFER_SIZE, device=device)
 policy_raw = DDPG_CNN.DDPG(3, action_dim, min_action, max_action)
 if PRETRAINED_MODEL:
-    policy_raw.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
+	policy_raw.load(os.path.join("./model_checkpoints", PRETRAINED_MODEL))
 
 TAG = args.tag
 log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", time.localtime())+TAG, comment="logWriter")
@@ -144,6 +144,7 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 
 state, done = env.reset(), False
 state = clip_image(state)
+state = np.swapaxes(state, 0, 2).copy()
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -159,6 +160,7 @@ for t in tqdm(range(max_timesteps)):
 	# Perform action
 	next_state, reward, done, _ = env.step(action)
 	next_state = clip_image(next_state)
+	next_state = np.swapaxes(next_state, 0, 2).copy()
 
 	done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -191,7 +193,7 @@ for t in tqdm(range(max_timesteps)):
 		# Reset environment
 		state, done = env.reset(), False
 		state = clip_image(state)
-
+		state = np.swapaxes(state, 0, 2).copy()
 		
 		episode_reward = 0
 		episode_timesteps = 0
