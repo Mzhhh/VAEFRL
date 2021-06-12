@@ -117,7 +117,7 @@ LOG_INTERVAL = 10
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environments
-def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps=100):
+def eval_policy(policy, env_name, seed, eval_episodes=10, episode_timesteps=100):
 	eval_env = gym.make(env_name)
 	eval_env.seed(seed + 100)
 
@@ -144,7 +144,7 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 
 state, done = env.reset(), False
 state = clip_image(state)
-state = np.swapaxes(state, 0, 2).copy()
+state = np.swapaxes(state, 0, 2)[np.newaxis, :].copy()
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -160,7 +160,7 @@ for t in tqdm(range(max_timesteps)):
 	# Perform action
 	next_state, reward, done, _ = env.step(action)
 	next_state = clip_image(next_state)
-	next_state = np.swapaxes(next_state, 0, 2).copy()
+	next_state = np.swapaxes(next_state, 0, 2)[np.newaxis, :].copy()
 
 	done_bool = float(done or (episode_timesteps > max_episode_steps))
 
@@ -193,7 +193,7 @@ for t in tqdm(range(max_timesteps)):
 		# Reset environment
 		state, done = env.reset(), False
 		state = clip_image(state)
-		state = np.swapaxes(state, 0, 2).copy()
+		state = np.swapaxes(state, 0, 2)[np.newaxis, :].copy()
 		
 		episode_reward = 0
 		episode_timesteps = 0
@@ -206,7 +206,7 @@ for t in tqdm(range(max_timesteps)):
 			policy_raw.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
-			avg_reward = eval_policy(vae, policy_raw, env_name, args.seed, 5, max_episode_steps)
+			avg_reward = eval_policy(policy_raw, env_name, args.seed, 5, max_episode_steps)
 			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
 
 ### --- TRAINING END --- ###
