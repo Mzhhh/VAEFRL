@@ -126,11 +126,13 @@ def eval_policy(policy, env_name, seed, eval_episodes=10, episode_timesteps=100)
 		episode_step = 0
 		state, done = eval_env.reset(), False
 		state = clip_image(state)
+		state = np.swapaxes(state, 0, 2)[np.newaxis, :].copy()
 		
 		while not done and (episode_timesteps < 0 or episode_step < episode_timesteps):
 			action = policy.select_action(state)
 			state, reward, done, _ = eval_env.step(action)
 			state = clip_image(state)
+			state = np.swapaxes(state, 0, 2)[np.newaxis, :].copy()
 			episode_step += 1
 
 			avg_reward += reward
