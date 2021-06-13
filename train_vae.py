@@ -181,7 +181,7 @@ for t in tqdm(range(max_timesteps)):
     state = state.copy()
     next_state = next_state.copy()
 
-    buffer_raw.add(state, action, next_state, reward, done_bool)
+    buffer_raw.add_vector(state, action, next_state, reward, done_bool)
 
     state = next_state
     state_tf = next_state_tf
