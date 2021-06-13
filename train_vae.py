@@ -153,7 +153,7 @@ state_tf = process_state_image(state)  # for tf model
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
 
 state = clip_image(state)
-state = np.swapaxes(state, 0, 2).copy()
+state = np.swapaxes(state, 0, 2)
 
 for t in tqdm(range(max_timesteps)):
 		
@@ -172,6 +172,7 @@ for t in tqdm(range(max_timesteps)):
     state_frame_stack_queue.append(next_state_tf)
 
     next_state = clip_image(next_state)
+    next_state = np.swapaxes(next_state, 0, 2)
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
