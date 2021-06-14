@@ -133,7 +133,8 @@ if __name__ == "__main__":
 	parser.add_argument("--num_sample", default=1e3, type=float)
 	parser.add_argument("--show_image", default=-1, type=float)
 	parser.add_argument("--max_episode_steps", default=1e2, type=float) 
-	parser.add_argument("--load_model", default="", type=str)    
+	parser.add_argument("--load_model", default="", type=str)
+	parser.add_argument("--model_path", default="./model_checkpoints", type=str)
 	args = parser.parse_args()
 
 	num_sample = int(args.num_sample)
@@ -142,8 +143,9 @@ if __name__ == "__main__":
 
 	max_episode_steps = int(args.max_episode_steps)
 	VAE_MODEL_FILE = args.load_model
+	VAE_MODEL_PATH = args.model_path
 	if VAE_MODEL_FILE.lower() == "newest":  # default case
-		avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
+		avail_models = [f for f in os.listdir(VAE_MODEL_PATH) if f.startswith("vae")]
 		assert avail_models, "No available vae model"
 		avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
 		VAE_MODEL_FILE = avail_models[0][0]  # newest
@@ -194,7 +196,7 @@ if __name__ == "__main__":
 		need_reset = done or (episode_step >= max_episode_steps)
 	
 	vae = CNNVAE(image_channels=3, h_dim=1024, z_dim=32)
-	vae.load(os.path.join("./model_checkpoints", VAE_MODEL_FILE))
+	vae.load(os.path.join(VAE_MODEL_PATH, VAE_MODEL_FILE))
 	vae.eval()
 
 	latent_np, vae_recon_np = generate_results(vae, state_array/255.0)
