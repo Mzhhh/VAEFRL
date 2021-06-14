@@ -35,7 +35,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
 parser.add_argument("--start_timesteps", default=25e3, type=float) # Time steps initial random policy is used
 parser.add_argument("--max_timesteps", default=1e6, type=float)    # Max time steps to run environment
-parser.add_argument("--max_episode_steps", default=1e2, type=float)
+parser.add_argument("--episode_start_steps", default=50, type=float)
+parser.add_argument("--max_episode_steps", default=250, type=float)
 parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
@@ -64,6 +65,7 @@ REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
 max_timesteps = int(args.max_timesteps)
 expl_noise = args.expl_noise
+episode_start_steps = int(args.episode_start_steps)
 max_episode_steps = int(args.max_episode_steps)
 batch_size = int(args.batch_size)
 eval_freq = int(args.eval_freq)
@@ -103,6 +105,8 @@ else:
 	min_action = env.action_space.low
 	max_action = env.action_space.high
 
+DEFAULT_ACTION = np.zeros(3).astype(np.float32s)
+
 # model components
 
 policy_repr = DDPG.DDPG(32, action_dim, min_action, max_action)
@@ -118,7 +122,7 @@ LOG_INTERVAL = 10
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environments
-def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps=100):
+def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_start=episode_start_steps, episode_end=max_episode_steps):
 	eval_env = gym.make(env_name)
 	eval_env.seed(seed + 100)
 
@@ -129,14 +133,15 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 		state = clip_image(state)
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
-		while not done and (episode_timesteps < 0 or episode_step < episode_timesteps):
-			action = policy.select_action(state_repr)
+		while not done and episode_step < episode_end:
+			action = DEFAULT_ACTION if episode_step > episode_start else policy.select_action(state_repr)
 			state, reward, done, _ = eval_env.step(action)
 			state = clip_image(state)
 			state_repr = get_encoded_raw(vae, state).cpu().numpy()
 			episode_step += 1
 
-			avg_reward += reward
+			if episode_step > episode_start:
+				avg_reward += reward
 
 	avg_reward /= eval_episodes
 
@@ -149,6 +154,8 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_timesteps
 # step 3: fix VAE, train agent
 
 state, done = env.reset(), False
+for _ in range(episode_start_steps):
+	state, _, _, _ = env.step(DEFAULT_ACTION)
 state = clip_image(state)
 
 state_repr = get_encoded_raw(vae, state).cpu().numpy()
@@ -204,6 +211,8 @@ for t in tqdm(range(max_timesteps)):
 		log_writer.add_scalar("agent/episode_reward", episode_reward, t+1)
 		# Reset environment
 		state, done = env.reset(), False
+		for _ in range(episode_start_steps):
+			state, _, _, _ = env.step(DEFAULT_ACTION)
 		state = clip_image(state)
 
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
@@ -219,7 +228,7 @@ for t in tqdm(range(max_timesteps)):
 			policy_repr.save("./model_checkpoints/agent_eps_%d_%s" % (episode_num, time_str) + ("_%s"%TAG if TAG else ""))
 
 		if t > start_timesteps and episode_num % eval_freq == 0:
-			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed, 5, max_episode_steps)
+			avg_reward = eval_policy(vae, policy_repr, env_name, args.seed+1234, 5)
 			log_writer.add_scalar("agent/eval_reward", avg_reward, t+1)
 
 
