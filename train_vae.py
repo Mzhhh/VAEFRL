@@ -37,7 +37,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--seed", default=0, type=int)               # Sets Gym, PyTorch and Numpy seeds
 parser.add_argument("--max_timesteps", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--start_timesteps", default=-1, type=float) # Time steps initial random policy is used
-parser.add_argument("--max_episode_steps", default=1e2, type=float) 
+parser.add_argument("--episode_start_steps", default=50, type=float)
+parser.add_argument("--max_episode_steps", default=250, type=float) 
 parser.add_argument("--buffer_size", default=1e6, type=float)    # Max time steps to run environment
 parser.add_argument("--expl_noise", default=0.1)                 # Std of Gaussian exploration noise
 parser.add_argument("--batch_size", default=128, type=float)       # Batch size for both actor and critic
@@ -78,6 +79,7 @@ REPLAY_BUFFER_SIZE = int(args.buffer_size)
 
 max_timesteps = int(args.max_timesteps)
 expl_noise = args.expl_noise
+episode_start_steps = int(args.episode_start_steps)
 max_episode_steps = int(args.max_episode_steps)
 batch_size = int(args.batch_size)
 
@@ -116,6 +118,7 @@ action_dim = env.action_space.shape[0]
 min_action = env.action_space.low
 max_action = env.action_space.high
 
+DEFAULT_ACTION = np.zeros(3).astype(np.float32)
 
 # model components
 
@@ -148,6 +151,8 @@ log_writer = SummaryWriter(log_dir="./tensorboard/"+time.strftime("%m%d%H%M", ti
 
 
 state, done = env.reset(), False
+for _ in range(episode_start_steps):
+	state, _, _, _ = env.step(DEFAULT_ACTION)
 
 state_tf = process_state_image(state)  # for tf model
 state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
@@ -236,6 +241,8 @@ for t in tqdm(range(max_timesteps)):
         log_writer.add_scalar("agent/reward", episode_reward, t+1)
         # Reset environment
         state, done = env.reset(), False
+        for _ in range(episode_start_steps):
+	        state, _, _, _ = env.step(DEFAULT_ACTION)
 
         state_tf = process_state_image(state)  # for tf model
         state_frame_stack_queue = deque([state_tf]*3, maxlen=3)
