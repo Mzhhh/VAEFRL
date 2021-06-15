@@ -139,7 +139,8 @@ def eval_policy(policy, env_name, seed, eval_episodes=10, episode_start=episode_
 			state = np.swapaxes(state, 0, 2)[np.newaxis, :].copy()
 			episode_step += 1
 
-			avg_reward += reward
+			if episode_step > episode_start:
+				avg_reward += reward
 
 	avg_reward /= eval_episodes
 
