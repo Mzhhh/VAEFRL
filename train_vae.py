@@ -70,7 +70,7 @@ PRETRAINED_MODEL = args.pretrained_model
 if PRETRAINED_MODEL.lower() == "newest":
     avail_models = [f for f in os.listdir("./model_checkpoints") if f.startswith("vae")]
     assert avail_models, "No available vae model"
-    avail_models = sorted([(f, f.split("_")[-1]) for f in avail_models], key=lambda t: t[1], reverse=True)
+    avail_models = sorted([(f, re.search(r"\d+\_(\d+)").groups[0]) for f in avail_models], key=lambda t: t[1], reverse=True)
     PRETRAINED_MODEL = avail_models[0][0]
     print(f"Using latest version: {PRETRAINED_MODEL}")
 
