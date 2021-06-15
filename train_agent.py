@@ -105,7 +105,7 @@ else:
 	min_action = env.action_space.low
 	max_action = env.action_space.high
 
-DEFAULT_ACTION = np.zeros(3).astype(np.float32s)
+DEFAULT_ACTION = np.zeros(3).astype(np.float32)
 
 # model components
 
