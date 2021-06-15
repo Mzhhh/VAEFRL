@@ -134,7 +134,7 @@ def eval_policy(vae, policy, env_name, seed, eval_episodes=10, episode_start=epi
 		state_repr = get_encoded_raw(vae, state).cpu().numpy()
 		
 		while not done and episode_step < episode_end:
-			action = DEFAULT_ACTION if episode_step > episode_start else policy.select_action(state_repr)
+			action = DEFAULT_ACTION if episode_step < episode_start else policy.select_action(state_repr)
 			state, reward, done, _ = eval_env.step(action)
 			state = clip_image(state)
 			state_repr = get_encoded_raw(vae, state).cpu().numpy()
