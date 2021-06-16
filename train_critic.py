@@ -135,7 +135,7 @@ for t in tqdm(range(max_timesteps)):
     next_state_tf = process_state_image(next_state)  # for tf
     state_frame_stack_queue.append(next_state_tf)
 
-    next_state = clip_image(state)
+    next_state = clip_image(next_state)
 
     done_bool = float(done or (episode_timesteps > max_episode_steps))
 
