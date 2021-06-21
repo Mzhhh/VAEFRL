@@ -262,4 +262,3 @@ for t in tqdm(range(max_timesteps)):
             torch.save(vae_optimizer.state_dict(), "./model_checkpoints/vae_optim_eps_%d_%s" % (episode_num, time_str))
 
 ### --- TRAINING END --- ###
-
