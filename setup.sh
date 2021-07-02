@@ -2,6 +2,8 @@
 
 sudo apt-get install xvfb
 
+conda install pytorch cudatoolkit=10.2 -c pytorch
+pip install tensorflow=1.15.0
 pip install gym box2d box2d-py
 pip install --upgrade h5py==2.10.0
 pip install pyvirtualdisplay

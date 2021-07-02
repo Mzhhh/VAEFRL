@@ -1,5 +1,7 @@
 .vscode/*
+tensorboard
 tensorboard/*
+model_checkpoints
 model_checkpoints/*
 __pycache__/*
 .ipynb_checkpoints/*

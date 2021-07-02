@@ -6,7 +6,7 @@ import sys
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--directory", default="./model_checkpoints", type=str)
+    parser.add_argument("--directory", default="../model_checkpoints", type=str)
     parser.add_argument("--prefix", default="", type=str)
     parser.add_argument("--keep_latest", default=1, type=int)
     args = parser.parse_args()
